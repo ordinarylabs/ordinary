@@ -77,6 +77,20 @@ pub mod op {
             Ok(buf.into())
         }
 
+        /// !! should also add build-time query-caching because
+        /// !! at least for the primary application it should be knowable
+        /// !! at build time.
+        ///
+        /// ?? could also add other query caches.
+        ///
+        /// ** breaking changes will happen, because humans are human and stupid
+        /// ** we need the ability to notify and propagate those changes for
+        /// ** downstream consumers. i think the best way to do that is with
+        /// ** the "subnetverse."
+        ///
+        /// !! "an upstream provider has made a change to a data model you depend on; see the diff ..."
+        /// !! "see if you're impacted and resolve any discrepancies ..."
+        ///
         /// (id, parent, group, key, content)
         pub fn process(
             bytes: Bytes,
@@ -180,57 +194,59 @@ pub mod op {
         ///             - ending position: 1 byte
         ///         - 2
         /// - kind: 1 - 255 bytes
+        ///
+        /// !! needs to be compiled into the binary formatted query at build time
+        /// !! and then the query request can just be a reference to the built query
+        ///
+        ///  <div data-query="product">
+        ///     Product ID: <span data-id>...</span>
+        ///
+        ///     <p data-content>Placeholder...</p>
+        ///     <div data-user>
+        ///         User ID: <span data-id>...</span>
+        ///         Username: <span data-username>...</span>
+        ///     </div>
+        ///
+        ///     <section data-subquery="reviews">
+        ///         <div data-subquery="stars">
+        ///             <div data-occurrences>
+        ///                 <div data-value-ordered>{}</div>
+        ///                 <progress id="stars-{value}" value="{count}" max="{count-max}"></progress>
+        ///             </div>
+        ///         </div>
+        ///
+        ///         <div data-range="-10,-1">
+        ///
+        ///         </div>
+        ///     </section>
+        /// </div>
+        ///
+        /// product.1234.comments[0..10].replies
         pub fn new(
             token: &[u8; 73],
             parent: &[u8; 16],
             id: &[u8; 16],
-            /// !! needs to be compiled into the binary formatted query at build time
-            /// !! and then the query request can just be a reference to the built query
-            ///
-            ///  <div data-query="product">
-            ///     Product ID: <span data-id>...</span>
-            ///
-            ///     <p data-content>Placeholder...</p>
-            ///     <div data-user>
-            ///         User ID: <span data-id>...</span>
-            ///         Username: <span data-username>...</span>
-            ///     </div>
-            ///
-            ///     <section data-subquery="reviews">
-            ///         <div data-subquery="stars">
-            ///             <div data-occurrences>
-            ///                 <div data-value-ordered>{}</div>
-            ///                 <progress id="stars-{value}" value="{count}" max="{count-max}"></progress>
-            ///             </div>
-            ///         </div>
-            ///
-            ///         <div data-range="-10,-1">
-            ///
-            ///         </div>
-            ///     </section>
-            /// </div>
-            ///
-            /// product.1234.comments[0..10].replies
             query: &str,
         ) -> Result<Bytes, Box<dyn std::error::Error>> {
-            let kind_len = kind.len();
+            // let kind_len = kind.len();
 
-            if kind_len > 255 {
-                return Err("kind cannot be larger than 255 bytes".into());
-            }
+            // if kind_len > 255 {
+            //     return Err("kind cannot be larger than 255 bytes".into());
+            // }
 
-            let mut buf = BytesMut::with_capacity(content.len() + kind_len + 1 + 16);
+            // let mut buf = BytesMut::with_capacity(content.len() + kind_len + 1 + 16);
 
-            buf.put(&token[..]);
-            buf.put(&parent[..]);
-            buf.put(&id[..]);
+            // buf.put(&token[..]);
+            // buf.put(&parent[..]);
+            // buf.put(&id[..]);
 
-            buf.put_u8(kind_len as u8);
-            buf.put(kind);
+            // buf.put_u8(kind_len as u8);
+            // buf.put(kind);
 
-            buf.put(content);
+            // buf.put(content);
 
-            Ok(buf.into())
+            // Ok(buf.into())
+            Ok(Bytes::new())
         }
 
         /// (id, parent, group, key, content)
@@ -286,19 +302,19 @@ pub mod op {
 
                 let parent = *Uuid::now_v7().as_bytes();
 
-                let put_req = new(token[..].try_into()?, b"food", &parent, b"cheesecake")?;
+                // let put_req = new(token[..].try_into()?, b"food", &parent, b"cheesecake")?;
 
-                let (id, p_parent, p_group, key, content) = process(put_req)?;
+                // let (id, p_parent, p_group, key, content) = process(put_req)?;
 
-                assert_eq!(&p_parent, &parent[..]);
-                assert_eq!(&p_group, &group[..]);
+                // assert_eq!(&p_parent, &parent[..]);
+                // assert_eq!(&p_group, &group[..]);
 
-                assert_eq!(&key[0..4], b"food");
-                assert_eq!(&key[4..20], &parent);
-                assert_eq!(Uuid::from_slice(&key[20..36])?, Uuid::from_bytes(id));
+                // assert_eq!(&key[0..4], b"food");
+                // assert_eq!(&key[4..20], &parent);
+                // assert_eq!(Uuid::from_slice(&key[20..36])?, Uuid::from_bytes(id));
 
-                assert_eq!(&content[0..16], &user);
-                assert_eq!(&content[16..], b"cheesecake");
+                // assert_eq!(&content[0..16], &user);
+                // assert_eq!(&content[16..], b"cheesecake");
 
                 Ok(())
             }

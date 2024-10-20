@@ -1,0 +1,16 @@
+[package]
+name = "templates-products-templates-id"
+version = "0.0.0"
+edition = "2021"
+
+[query]
+kind = "product"
+content = true
+
+[query.reviews.stars.occurrences]
+order = "asc"
+
+[query.reviews]
+cursor = "last"
+direction = "reverse"
+count = 10

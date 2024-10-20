@@ -1,0 +1,45 @@
+[package]
+name = "ordinary"
+version = "0.0.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+authors = ["sean watters <sean@ordinarylabs.io>"]
+description = "build something ordinary."
+homepage = "https://github.com/ordinarylabs/ordinary"
+repository = "https://github.com/ordinarylabs/ordinary"
+categories = []
+readme = "README.md"
+
+[dependencies]
+clap = { version = "4.5.18", features = ["derive"] }
+
+axum = { version = "0.7.7", features = ["macros"] }
+tower-http = { version = "0.5.2", features = ["cors"] }
+
+rayon = "1.10.0"
+tokio = { version = "1.40.0", features = ["full"] }
+mio = "1.0.2"
+
+flume = "0.11.0"
+oneshot = { version = "0.1.8", default-features = false, features = ["std"] }
+
+bytes = "1.7.2"
+uuid = { version = "1.10.0", features = ["v7"] }
+
+log = "0.4.22"
+env_logger = "0.11.5"
+
+ring = "0.17.8"
+
+saferlmdb = "0.0.1"
+
+zstd = "0.13.2"
+blake2 = "0.10.6"
+
+[lib]
+name = "ordinary"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ordinary"
+path = "src/main.rs"
