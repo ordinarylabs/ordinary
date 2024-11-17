@@ -353,7 +353,7 @@ name = "extensions-git"
 version = "0.0.0"
 
 [[package]]
-name = "extensions-images"
+name = "extensions-media"
 version = "0.0.0"
 
 [[package]]
@@ -708,7 +708,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ordinarylabs_io"
+name = "ordinarylabs-io"
 version = "0.0.0"
 dependencies = [
  "ordinary",
@@ -853,10 +853,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "routes_products"
-version = "0.0.0"
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -993,6 +989,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
+name = "structure-posts"
+version = "0.0.0"
+
+[[package]]
+name = "structure-product"
+version = "0.0.0"
+
+[[package]]
+name = "structure-user"
+version = "0.0.0"
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1026,10 +1034,6 @@ name = "sync_wrapper"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
-
-[[package]]
-name = "templates-posts"
-version = "0.0.0"
 
 [[package]]
 name = "tokio"

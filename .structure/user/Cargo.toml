@@ -1,0 +1,10 @@
+[package]
+name = "structure-user"
+version = "0.0.0"
+
+
+# cache patching for code updates
+
+# 1. snapshot downloaded
+# 2. snapshot patched with deltas as new changes come in
+# 3. basically distributed git

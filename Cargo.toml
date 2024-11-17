@@ -1,38 +1,37 @@
 [package]
-name = "ordinarylabs_io"
+name = "ordinarylabs-io"
 version = "0.0.0"
+edition = "2021"
+authors = ["sean watters <sean@ordinarylabs.io>"]
 
 homepage = "https://ordinarylabs.io"
 description = "https://ordinarylabs.io"
 
-authors.workspace = true
-edition.workspace = true
-repository.workspace = true
-license.workspace = true
-
-[[bin]]
-name = "ordinarylabs_io"
-path = "src/main.rs"
+repository = "https://github.com/ordinarylabs/ordinary"
 
 [dependencies]
 ordinary = { workspace = true }
 
 [workspace]
 members = [
+    ## only for this project
     "ordinary",
 
     ".extensions/git",
-    ".extensions/images",
+    ".extensions/media",
     ".extensions/payments",
-    ".templates/posts",
-    ".templates/products",
+
+    ".structure/post",
+    ".structure/product",
+    ".structure/user"
 ]
 
-[workspace.package]
-authors = ["sean watters <sean@ordinarylabs.io>"]
-edition = "2021"
-repository = "https://github.com/ordinarylabs/ordinary"
-license = "AGPL-3.0-only"
-
+## only for this project
 [workspace.dependencies]
 ordinary = { path = "./ordinary", version = "*" }
+
+
+[template.'*'.html]
+lang = "en"
+[template.'*'.html.head.meta]
+charset = "utf-8"

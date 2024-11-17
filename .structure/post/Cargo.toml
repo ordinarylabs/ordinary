@@ -1,0 +1,8 @@
+[package]
+name = "structure-posts"
+version = "0.0.0"
+
+[properties]
+slug = { type = 'str', ref = '{{title}}-{{timestamp}}' }
+title = { type = 'str' }
+body = { type = 'str' }
