@@ -2,13 +2,15 @@
 name = "ordinary"
 version = "0.0.0"
 edition = "2021"
-license = "AGPL-3.0-only"
 authors = ["sean watters <sean@ordinarylabs.io>"]
-description = "build something ordinary."
+
 homepage = "https://github.com/ordinarylabs/ordinary"
 repository = "https://github.com/ordinarylabs/ordinary"
-categories = []
+
+description = "build something ordinary."
+license = "AGPL-3.0-only"
 readme = "README.md"
+categories = []
 
 [dependencies]
 clap = { version = "4.5.18", features = ["derive"] }

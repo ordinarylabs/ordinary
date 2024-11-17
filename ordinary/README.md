@@ -100,11 +100,11 @@ flowchart LR
             RemoveRole{{Remove Role}}
         end
 
-        subgraph Storage
-            style fill:none
+        subgraph Graph
+            style Graph fill:none
 
-            GPut{{Put}}
-            GQuery{{Query}}
+            GPut{{Graph Put}}
+            GQuery{{Graph Query}}
         end
 
         subgraph Auth
@@ -151,7 +151,7 @@ flowchart LR
             PermissionsWriter2
         end
 
-        subgraph Main[Main ]
+        subgraph Main[Main Graph]
             style Main fill:none,stroke:green
 
             MainWriter
@@ -180,15 +180,15 @@ flowchart LR
     S4--4-->RefreshVerification
 
 
-    subgraph Stores78[Stores]
+    subgraph Stores78[Storage]
         style Stores78 fill:none,stroke:yellow
-        G7[(7 Main  Store)]
-        G8[(8 Main  Store)]
+        G7[(7 Main Store)]
+        G8[(8 Main Store)]
     end
 
-    G1[( Store)]
-    G2[( Store)]
-    G3[( Store)]
+    G1[(Graph Store)]
+    G2[(Graph Store)]
+    G3[(Graph Store)]
 
     Kv1[(KV Store)]
     Kv2[(KV Store)]
