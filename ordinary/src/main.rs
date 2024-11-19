@@ -1,5 +1,5 @@
 pub use ordinary::auth;
-pub use ordinary::optimizer;
+pub use ordinary::orchestrator;
 pub use ordinary::paths;
 pub use ordinary::storage;
 

@@ -1,3 +1,6 @@
-use ordinary;
+mod io;
+use io::{InputA, OutputA};
 
-fn main() {}
+fn handler(input: InputA) -> OutputA {
+    OutputA {}
+}

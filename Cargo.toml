@@ -17,21 +17,29 @@ members = [
     ## only for this project
     "ordinary",
 
-    ".extensions/git",
-    ".extensions/media",
-    ".extensions/payments",
-
-    ".structure/post",
-    ".structure/product",
-    ".structure/user"
+    ".extensions/*",
+    ".structure/*",
 ]
 
 ## only for this project
 [workspace.dependencies]
 ordinary = { path = "./ordinary", version = "*" }
 
+[entity]
+name = { type = "str" }
+liked_posts = { link = "post", on = "liked_by" }
+
+[handler.a.input]
+id = { type = "str" }
+
+[query.posts.asdf]
+
+[expirments]
 
 [template.'*'.html]
 lang = "en"
 [template.'*'.html.head.meta]
 charset = "utf-8"
+
+[ordinary]
+cache = false

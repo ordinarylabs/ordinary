@@ -5,7 +5,8 @@ use log::info;
 
 use saferlmdb::EnvBuilder;
 
-use crate::optimizer::Optimizer;
+use crate::orchestrator::Orchestrator;
+use crate::paths::o7::GraphQuery7;
 use crate::paths::o8::GraphPut8;
 use crate::storage;
 
@@ -24,18 +25,25 @@ pub fn start() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // stores
-    let graph_store = Arc::new(storage::StorageSystem::new(env)?);
+    let storage_system = Arc::new(storage::StorageSystem::new(env)?);
 
-    info!("{:?}", graph_store.stat());
+    info!("{:?}", storage_system.stat());
 
     // operations
-    let mut graph_put8 = GraphPut8::new(graph_store.clone());
+    let mut graph_query7 = GraphQuery7::new(storage_system.clone());
+    let mut graph_put8 = GraphPut8::new(storage_system);
 
-    let optimizer = Optimizer::new(graph_put8.instruction_channel.clone());
+    let optimizer = Orchestrator::new(graph_put8.instruction_channel.clone());
 
-    let handle = thread::spawn(move || {
-        if let Err(err) = graph_put8.start() {
+    let query7_handle = thread::spawn(move || {
+        if let Err(err) = graph_query7.start() {
             println!("{:?}", err);
+        }
+    });
+
+    let put8_handle = thread::spawn(move || {
+        if let Err(err) = graph_put8.start() {
+            log::error!("{:?}", err);
         }
     });
 
@@ -45,7 +53,7 @@ pub fn start() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    handle.join().unwrap();
+    put8_handle.join().unwrap();
 
     Ok(())
 }

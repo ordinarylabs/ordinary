@@ -1,0 +1,8 @@
+{
+    "name": "{{name}}",
+    "posts": {
+        "{{posts.id}}": {
+            "title": "{{posts.title}}"
+        }
+    }
+}
