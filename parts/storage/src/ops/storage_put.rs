@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
-use crate::auth::token;
+use cbwaw::token;
 
 /// reversed <-
 /// put[token[action.hmac.exp.user_uuid.group_uuid]h.kind.parent.content]
@@ -97,7 +97,7 @@ mod test {
     use uuid::Uuid;
 
     use super::{new, process};
-    use crate::auth::token;
+    use cbwaw::token;
 
     #[test]
     fn test() -> Result<(), Box<dyn std::error::Error>> {

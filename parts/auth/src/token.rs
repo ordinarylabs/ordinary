@@ -15,7 +15,6 @@ const HMAC_KEY: &'static [u8] = b"replace this asap";
 /// hmac: [u8; 32],
 /// entity_uuid: [u8; 16],
 /// group_uuid: [u8; 16]
-
 #[inline(always)]
 pub fn generate_access(
     action: u8,

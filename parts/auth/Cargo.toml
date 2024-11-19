@@ -1,5 +1,5 @@
 [package]
-name = "ordinary"
+name = "cbwaw"
 version = "0.0.0"
 edition = "2021"
 authors = ["sean watters <sean@ordinarylabs.io>"]
@@ -29,7 +29,6 @@ bytes = "1.7.2"
 uuid = { version = "1.10.0", features = ["v7"] }
 
 log = "0.4.22"
-env_logger = "0.11.5"
 
 ring = "0.17.8"
 
@@ -39,9 +38,9 @@ zstd = "0.13.2"
 blake2 = "0.10.6"
 
 [lib]
-name = "ordinary"
+name = "cbwaw"
 path = "src/lib.rs"
 
 [[bin]]
-name = "ordinary"
+name = "cbwaw"
 path = "src/main.rs"

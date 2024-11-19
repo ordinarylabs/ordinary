@@ -1,13 +1,8 @@
-pub use ordinary::auth;
-pub use ordinary::orchestrator;
-pub use ordinary::paths;
-pub use ordinary::storage;
-
 use clap::{Parser, ValueEnum};
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 enum Command {
-    Start,
+    Command,
 }
 
 #[derive(Parser, Debug)]
@@ -15,12 +10,7 @@ enum Command {
 struct Args {
     #[arg(value_enum)]
     command: Command,
-
-    #[arg(short, long, default_value_t = 1)]
-    count: u8,
 }
-
-use ordinary::app::start;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
@@ -28,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     match args.command {
-        Command::Start => start()?,
+        Command::Command => (),
     }
 
     Ok(())

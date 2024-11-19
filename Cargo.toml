@@ -10,20 +10,21 @@ description = "https://ordinarylabs.io"
 repository = "https://github.com/ordinarylabs/ordinary"
 
 [dependencies]
-ordinary = { workspace = true }
+stewball = { workspace = true }
 
 [workspace]
 members = [
-    ## only for this project
-    "ordinary",
-
     ".extensions/*",
     ".structure/*",
+
+    ## only for this project
+    "parts/*",
 ]
 
 ## only for this project
 [workspace.dependencies]
-ordinary = { path = "./ordinary", version = "*" }
+cbwaw = { path = "./parts/auth", version = "*" }
+stewball = { path = "./parts/storage", version = "*" }
 
 [entity]
 name = { type = "str" }

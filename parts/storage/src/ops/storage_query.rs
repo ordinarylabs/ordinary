@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use bytes::{BufMut, Bytes, BytesMut};
 
-use crate::auth::token;
+use cbwaw::token;
 
 /// query[token[action.hmac.exp.user_uuid.group_uuid]h.kind.key[parent.uuid]list(h.kind_a[0..10].h.kind_b[0])]
 /// - token
@@ -125,7 +125,7 @@ mod test {
     use uuid::Uuid;
 
     use super::{new, process};
-    use crate::auth::token;
+    use cbwaw::token;
 
     #[test]
     fn test() -> Result<(), Box<dyn std::error::Error>> {
