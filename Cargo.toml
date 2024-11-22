@@ -19,7 +19,8 @@ members = [
 
     ## only for this project
     "parts/*",
-    "tools/*",
+    "tools/cli",
+    "tools/gui/src-tauri",
 ]
 
 ## only for this project
