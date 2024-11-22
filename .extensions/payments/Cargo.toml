@@ -11,3 +11,6 @@ description = "build something ordinary."
 license = "AGPL-3.0-only"
 readme = "README.md"
 categories = []
+
+[fragments.payment-form.html]
+public = true

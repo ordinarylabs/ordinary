@@ -19,6 +19,7 @@ members = [
 
     ## only for this project
     "parts/*",
+    "tools/*",
 ]
 
 ## only for this project
@@ -44,3 +45,6 @@ charset = "utf-8"
 
 [ordinary]
 cache = false
+
+[plugins]
+payments = true
