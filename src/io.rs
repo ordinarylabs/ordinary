@@ -1,5 +1,5 @@
-pub struct InputA {
+pub struct Input0 {
     // check handler.a.input for its properties and types
 }
 
-pub struct OutputA {}
+pub struct Output0 {}

@@ -1,8 +1,6 @@
-use uuid::Uuid;
-
 use bytes::{BufMut, Bytes, BytesMut};
-
 use cbwaw::token;
+use uuid::Uuid;
 
 /// reversed <-
 /// put[token[action.hmac.exp.user_uuid.group_uuid]h.kind.parent.content]
@@ -94,10 +92,7 @@ pub fn process(
 
 #[cfg(test)]
 mod test {
-    use uuid::Uuid;
-
-    use super::{new, process};
-    use cbwaw::token;
+    use super::*;
 
     #[test]
     fn test() -> Result<(), Box<dyn std::error::Error>> {

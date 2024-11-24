@@ -5,3 +5,7 @@ version = "0.0.0"
 
 
 extends = "user"
+
+[entity]
+name = { type = "str" }
+categories = { type = "category", list = true }
