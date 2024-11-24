@@ -1,7 +1,10 @@
 <html>
+  <head>
+    <% include!("_head.html.stpl"); %>
+  </head>
   <body>
     <% for msg in messages { %>
-    <div><%= msg %></div>
+      <div><%= msg %></div>
     <% } %>
   </body>
 </html>

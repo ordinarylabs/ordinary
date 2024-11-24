@@ -13,6 +13,7 @@ use serde::Serialize;
 #[template(path = "index.html.stpl")]
 struct IndexHtmlTemplate<'a> {
     messages: Vec<&'a str>,
+    title: &'a str,
 }
 
 #[derive(Serialize)]
@@ -35,6 +36,7 @@ mod test {
     fn html_template_test() {
         let tpl = IndexHtmlTemplate {
             messages: vec!["foo", "bar"],
+            title: "sup",
         };
 
         let mut buffer = Buffer::with_capacity(200);

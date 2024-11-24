@@ -1,0 +1,23 @@
+[entities]
+
+[entities.example]
+name = { type = "str" }
+liked_posts = { link = "post", on = "liked_by" }
+
+[handler.a.input]
+id = { type = "str" }
+
+[query.posts.asdf]
+
+[experiments]
+
+[template.'*'.html]
+lang = "en"
+[template.'*'.html.head.meta]
+charset = "utf-8"
+
+[ordinary]
+cache = false
+
+[plugins]
+payments = true
