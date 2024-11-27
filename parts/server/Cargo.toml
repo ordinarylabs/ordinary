@@ -29,7 +29,6 @@ tracing-subscriber = "0.3.18"
 stewball = { workspace = true }
 uuid = { version = "1.11.0", features = ["serde"] }
 serde = { version = "1.0.215", features = ["derive"] }
-saferlmdb = { workspace = true }
 hyper = { version = "1.5.1", features = ["client"] }
 
 [dev-dependencies]

@@ -5,9 +5,6 @@ use axum::response::IntoResponse;
 
 #[axum::debug_handler]
 pub async fn handler(State(state): State<crate::State>, body: Bytes) -> impl IntoResponse {
-    println!("hello!");
-    println!("{:?}", body);
-
     match match body[0] {
         0 => state.core.access_get(body),
         1 => state.core.group_assign(body),
@@ -15,7 +12,10 @@ pub async fn handler(State(state): State<crate::State>, body: Bytes) -> impl Int
         3 => state.core.group_drop(body),
         4 => state.core.login_finish(body),
         5 => state.core.login_start(body),
-        6 => state.core.registration_finish(body),
+        6 => match state.core.registration_finish(body) {
+            Ok(_) => Ok(Bytes::new()),
+            Err(err) => Err(err),
+        },
         7 => state.core.registration_start(body),
         8 => state.core.secret_get(body),
         9 => state.core.secret_put(body),

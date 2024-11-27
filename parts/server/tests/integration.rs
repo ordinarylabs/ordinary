@@ -1,10 +1,8 @@
 use std::collections::BTreeMap;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use tokio::net::TcpListener;
 
 use hostess;
-use saferlmdb::EnvBuilder;
 
 async fn server() -> Result<(SocketAddr, SocketAddr), Box<dyn std::error::Error>> {
     let reqres_listener = TcpListener::bind("0.0.0.0:0").await.unwrap();
