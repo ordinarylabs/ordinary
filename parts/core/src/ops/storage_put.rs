@@ -1,5 +1,7 @@
+use crate::Core;
 use bytes::{BufMut, Bytes, BytesMut};
 use cbwaw::token;
+use saferlmdb::{put, WriteTransaction};
 use uuid::Uuid;
 
 /// reversed <-
@@ -17,7 +19,7 @@ use uuid::Uuid;
 ///     - parent_kind: 1 byte
 /// - entity:
 ///     - entity: ..
-pub fn new(
+pub fn req(
     token: &[u8; 73],
 
     parent: &[u8; 16],
@@ -56,25 +58,7 @@ pub fn new(
 ///
 /// !! "an upstream provider has made a change to a data model you depend on; see the diff ..."
 /// !! "see if you're impacted and resolve any discrepancies ..."
-///
-/// (id, parent_id, group_id, kind, key, entity, grandparent_id, parent_kind, parent_key)
-pub fn process(
-    bytes: Bytes,
-) -> Result<
-    (
-        [u8; 16],
-        [u8; 16],
-        [u8; 16],
-        [u8; 16],
-        [u8; 16],
-        u8,
-        u8,
-        [u8; 33],
-        [u8; 33],
-        Bytes,
-    ),
-    Box<dyn std::error::Error>,
-> {
+pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
     let len = bytes.len();
 
     if len < 73 {
@@ -114,70 +98,51 @@ pub fn process(
     parent_key[16] = parent_kind;
     parent_key[17..33].copy_from_slice(&parent_id[..]);
 
-    Ok((
-        grandparent_id,
-        parent_id,
-        id,
-        user_id,
-        group_id,
-        kind,
-        parent_kind,
-        key,
-        parent_key,
-        entity.into(),
-    ))
-}
+    let txn = WriteTransaction::new(core.env.clone())?;
 
-#[cfg(test)]
-mod test {
-    use super::*;
+    {
+        let mut access = txn.access();
 
-    #[test]
-    fn test() -> Result<(), Box<dyn std::error::Error>> {
-        let action: u8 = 8;
-        let user = *Uuid::now_v7().as_bytes();
-        let group = *Uuid::now_v7().as_bytes();
+        let mut valid_group = false;
+        let parent_group: &[u8; 16] = access.get(&core.group_db, &parent_id[..])?;
 
-        let token = token::generate_access(action, &user, &group)?;
+        if parent_group != &group_id {
+            let mut cursor = txn.cursor(core.group_db.clone())?;
 
-        let parent = *Uuid::now_v7().as_bytes();
-        let grandparent = *Uuid::now_v7().as_bytes();
+            cursor.seek_k::<[u8; 16], [u8; 16]>(&access, parent_group)?;
 
-        let put_req = new(
-            token[..].try_into()?,
-            &parent,
-            1,
-            &grandparent,
-            2,
-            b"cheesecake",
-        )?;
+            let sub_groups: &[[u8; 16]] = cursor.get_multiple(&access)?;
 
-        let (
-            p_grandparent,
-            p_parent,
-            id,
-            p_user,
-            p_group,
-            kind,
-            p_parent_kind,
-            key,
-            _parent_key, // TODO: test
-            entity,
-        ) = process(put_req)?;
+            for sub_group in sub_groups {
+                if sub_group == &group_id[..] {
+                    valid_group = true;
+                    break;
+                }
+            }
 
-        assert_eq!(&p_parent, &parent[..]);
-        assert_eq!(&p_group, &group[..]);
+            if !valid_group {
+                'outer: loop {
+                    let sub_groups: &[[u8; 16]] = cursor.next_multiple(&access)?;
 
-        assert_eq!(key[16], kind);
-        assert_eq!(&key[0..16], &parent);
-        assert_eq!(Uuid::from_slice(&key[17..33])?, Uuid::from_bytes(id));
+                    for sub_group in sub_groups {
+                        if sub_group == &group_id[..] {
+                            valid_group = true;
+                            break 'outer;
+                        }
+                    }
+                }
+            }
+        }
 
-        assert_eq!(&entity[0..16], &p_grandparent);
-        assert_eq!(&entity[16], &p_parent_kind);
-        assert_eq!(&entity[17..33], &p_user);
-
-        assert_eq!(&entity[33..], b"cheesecake");
-
-        Ok(())
+        if valid_group {
+            access.put(&core.group_db, &id, &group_id, put::Flags::empty())?;
+            access.put(&core.entity_db, &key, &*entity, put::Flags::empty())?;
+        } else {
+            return Err("invalid group".into());
+        }
     }
+
+    txn.commit()?;
+
+    Ok(Bytes::copy_from_slice(&id[..]))
 }

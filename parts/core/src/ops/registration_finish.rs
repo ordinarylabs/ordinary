@@ -1,10 +1,13 @@
+use crate::Core;
 use bytes::{BufMut, Bytes, BytesMut};
+use saferlmdb::{put, WriteTransaction};
+use uuid::Uuid;
 
 const MAX_USERNAME_LEN: u8 = 255;
 
 /// username_len.username.client_finish
 /// payload
-pub fn new(
+pub fn req(
     username: &[u8],
     password: &[u8],
     client_state: &[u8],
@@ -27,14 +30,43 @@ pub fn new(
 }
 
 /// (username, client_finish)
-pub fn process(bytes: Bytes) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-    let username_len = bytes[0];
-    if username_len > bytes.len() as u8 - 2 {
+pub fn handle(core: &Core, payload: Bytes) -> Result<(), Box<dyn std::error::Error>> {
+    let username_len = payload[0];
+    if username_len > payload.len() as u8 - 2 {
         return Err("invalid format".into());
     }
 
-    let username = bytes[1..(username_len as usize) + 1].to_vec();
-    let client_finish = bytes[username_len as usize + 1..].to_vec();
+    let username = payload[1..(username_len as usize) + 1].to_vec();
+    let client_finish = payload[username_len as usize + 1..].to_vec();
 
-    Ok((username, client_finish))
+    let mut password_file = cbwaw::registration::server_finish(&client_finish)?;
+
+    let uuid = Uuid::new_v4();
+    let user_uuid = uuid.as_bytes();
+
+    password_file.extend_from_slice(user_uuid);
+
+    let txn = WriteTransaction::new(core.env.clone())?;
+
+    {
+        let mut access = txn.access();
+
+        access.put(
+            &core.auth_db,
+            &username,
+            &password_file,
+            put::Flags::empty(),
+        )?;
+
+        access.put(
+            &core.user_db,
+            user_uuid,
+            &username, // TODO: figure out what the user type should have
+            put::Flags::empty(),
+        )?;
+    }
+
+    txn.commit()?;
+
+    Ok(())
 }

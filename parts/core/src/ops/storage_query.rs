@@ -1,8 +1,8 @@
-use uuid::Uuid;
-
+use crate::Core;
 use bytes::{BufMut, Bytes, BytesMut};
-
 use cbwaw::token;
+use saferlmdb::ReadTransaction;
+use uuid::Uuid;
 
 /// query[token[action.hmac.exp.user_uuid.group_uuid]h.kind.key[parent.uuid]list(h.kind_a[0..10].h.kind_b[0])]
 /// - token
@@ -56,7 +56,7 @@ use cbwaw::token;
 /// </div>
 ///
 /// product.1234.comments[0..10].replies
-pub fn new(
+pub fn req(
     token: &[u8; 73],
     parent: &[u8; 16],
     id: &[u8; 16],
@@ -84,9 +84,7 @@ pub fn new(
 }
 
 /// (id, parent, group, key, content)
-pub fn process(
-    bytes: Bytes,
-) -> Result<([u8; 16], Bytes, [u8; 16], Bytes, Bytes), Box<dyn std::error::Error>> {
+pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
     let len = bytes.len();
 
     if len < 73 {
@@ -117,40 +115,22 @@ pub fn process(
     content.put(&user[..]);
     content.put(&bytes[90 + kind_len..]);
 
-    Ok((id, parent, group, key.into(), content.into()))
-}
+    // ?? id, parent, group, key, content
 
-#[cfg(test)]
-mod test {
-    use uuid::Uuid;
+    let txn = ReadTransaction::new(core.env.clone())?;
+    let access = txn.access();
 
-    use super::{new, process};
-    use cbwaw::token;
+    let mut cursor = txn
+        .cursor(core.entity_db.clone())
+        .expect("failed to create cursor");
 
-    #[test]
-    fn test() -> Result<(), Box<dyn std::error::Error>> {
-        let action: u8 = 8;
-        let user = *Uuid::now_v7().as_bytes();
-        let group = *Uuid::now_v7().as_bytes();
+    let object: (&[u8; 16], &[u8]) = cursor.last(&access).expect("failed to get last");
 
-        let token = token::generate_access(action, &user, &group)?;
+    let uuid = Uuid::from_slice(object.0)?;
+    let string = std::str::from_utf8(object.1);
 
-        let parent = *Uuid::now_v7().as_bytes();
+    log::info!("{:?}", uuid);
+    log::info!("{:?}", string);
 
-        // let put_req = new(token[..].try_into()?, b"food", &parent, b"cheesecake")?;
-
-        // let (id, p_parent, p_group, key, content) = process(put_req)?;
-
-        // assert_eq!(&p_parent, &parent[..]);
-        // assert_eq!(&p_group, &group[..]);
-
-        // assert_eq!(&key[0..4], b"food");
-        // assert_eq!(&key[4..20], &parent);
-        // assert_eq!(Uuid::from_slice(&key[20..36])?, Uuid::from_bytes(id));
-
-        // assert_eq!(&content[0..16], &user);
-        // assert_eq!(&content[16..], b"cheesecake");
-
-        Ok(())
-    }
+    Ok(Bytes::copy_from_slice(object.1))
 }

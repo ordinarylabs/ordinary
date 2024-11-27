@@ -1,16 +1,13 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use cbwaw::DefaultCipherSuite;
-use opaque_ke::{rand::rngs::OsRng, Ristretto255, ServerSetup};
-use saferlmdb::{
-    self as lmdb, put, Database, DatabaseOptions, EnvBuilder, Environment, ReadTransaction, Stat,
-    WriteTransaction,
-};
-
 use bytes::Bytes;
-use log::info;
-use uuid::Uuid;
+use opaque_ke::{Ristretto255, ServerSetup};
+use parking_lot::Mutex;
+use rand::rngs::OsRng;
+
+use cbwaw::DefaultCipherSuite;
+use saferlmdb::{self as lmdb, Database, DatabaseOptions, EnvBuilder, Environment, Stat};
 
 // ?? all objects have an expiration time that you can renew
 
@@ -50,16 +47,19 @@ pub mod ops;
 pub struct Core {
     opaque: ServerSetup<DefaultCipherSuite>,
 
-    /// need a minimum of 5 dbs
+    /// user_uuid -> state
+    auth_state: Arc<Mutex<BTreeMap<[u8; 16], Vec<u8>>>>,
+
+    /// DB env
     env: Arc<Environment>,
 
-    /// username -> user_id.password_file
+    /// username -> user_uuid.password_file
     auth_db: Arc<Database<'static>>,
 
-    /// user_id -> user()
+    /// user_uuid -> user()
     user_db: Arc<Database<'static>>,
 
-    /// (entity_id | user_id) -> group_id
+    /// (entity_id | user_uuid) -> group_id
     /// is DUPSORT, and DUPFIXED
     group_db: Arc<Database<'static>>,
 
@@ -71,7 +71,7 @@ pub struct Core {
     ///                            key([  parent  ],[ kind ]|[  child  ]) -> backLink(grandparent.parent_kind), value(properties)
     entity_db: Arc<Database<'static>>,
 
-    /// (entity_id | user_id) -> ref_type.(entity_id | user_id)
+    /// (entity_id | user_uuid) -> ref_type.(entity_id | user_uuid)
     /// is DUPSORT, and DUPFIXED
     reference_db: Arc<Database<'static>>,
 
@@ -82,11 +82,14 @@ pub struct Core {
 impl Core {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let mut rng = OsRng;
+
         let opaque = ServerSetup::<DefaultCipherSuite>::new_with_key(
             &mut rng,
             opaque_ke::keypair::KeyPair::<Ristretto255>::from_private_key_slice(&[0u8; 32])
                 .unwrap(),
         );
+
+        let auth_state = Arc::new(Mutex::new(BTreeMap::new()));
 
         std::fs::create_dir_all("./store")?;
 
@@ -142,6 +145,7 @@ impl Core {
 
         Ok(Self {
             opaque,
+            auth_state,
             env,
             auth_db,
             user_db,
@@ -172,41 +176,17 @@ impl Core {
     }
 
     pub fn login_finish(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
-        let (username, client_finish) = ops::login_finish::process(payload)?;
-
-        // TODO: cbwaw::login::server_finish(user_uuid, &client_finish, server_start)
-
-        Ok(Bytes::new())
+        ops::login_finish::handle(self, payload)
     }
     pub fn login_start(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
-        let (username, client_start) = ops::login_start::process(payload)?;
-
-        // TODO: get the password file
-
-        // let (state, message) = cbwaw::login::server_start(
-        //     &self.opaque,
-        //     &username,
-        //     &password_file,
-        //     &client_start,
-        // )?;
-
-        // TODO: store state
-
-        Ok(Bytes::new())
+        ops::login_finish::handle(self, payload)
     }
 
-    pub fn registration_finish(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
-        let (username, client_finish) = ops::registration_finish::process(payload)?;
-        let password_file = cbwaw::registration::server_finish(&client_finish)?;
-
-        // TODO: create user
-        // TODO: write password file to auth_db
-
-        Ok(Bytes::new())
+    pub fn registration_finish(&self, payload: Bytes) -> Result<(), Box<dyn std::error::Error>> {
+        ops::registration_finish::handle(self, payload)
     }
     pub fn registration_start(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
-        let (username, client_start) = ops::registration_start::process(payload)?;
-        cbwaw::registration::server_start(&self.opaque, &username, &client_start)
+        ops::registration_start::handle(self, payload)
     }
 
     pub fn secret_get(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
@@ -217,74 +197,10 @@ impl Core {
     }
 
     pub fn storage_put(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
-        let (_grandparent, parent, id, _user, group, _kind, _parent_kind, key, _parent_key, entity) =
-            ops::storage_put::process(payload)?;
-
-        let txn = WriteTransaction::new(self.env.clone())?;
-
-        {
-            let mut access = txn.access();
-
-            let mut valid_group = false;
-            let parent_group: &[u8; 16] = access.get(&self.group_db, &parent[..])?;
-
-            if parent_group != &group {
-                let mut cursor = txn.cursor(self.group_db.clone())?;
-
-                cursor.seek_k::<[u8; 16], [u8; 16]>(&access, parent_group)?;
-
-                let sub_groups: &[[u8; 16]] = cursor.get_multiple(&access)?;
-
-                for sub_group in sub_groups {
-                    if sub_group == &group[..] {
-                        valid_group = true;
-                        break;
-                    }
-                }
-
-                if !valid_group {
-                    'outer: loop {
-                        let sub_groups: &[[u8; 16]] = cursor.next_multiple(&access)?;
-
-                        for sub_group in sub_groups {
-                            if sub_group == &group[..] {
-                                valid_group = true;
-                                break 'outer;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if valid_group {
-                access.put(&self.group_db, &id, &group, put::Flags::empty())?;
-                access.put(&self.entity_db, &key, &*entity, put::Flags::empty())?;
-            } else {
-                return Err("invalid group".into());
-            }
-        }
-
-        txn.commit()?;
-
-        Ok(Bytes::copy_from_slice(&id[..]))
+        ops::storage_put::handle(self, payload)
     }
 
     pub fn storage_query(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
-        let txn = ReadTransaction::new(self.env.clone())?;
-        let access = txn.access();
-
-        let mut cursor = txn
-            .cursor(self.entity_db.clone())
-            .expect("failed to create cursor");
-
-        let object: (&[u8; 16], &[u8]) = cursor.last(&access).expect("failed to get last");
-
-        let uuid = Uuid::from_slice(object.0)?;
-        let string = std::str::from_utf8(object.1);
-
-        info!("{:?}", uuid);
-        info!("{:?}", string);
-
-        Ok(Bytes::copy_from_slice(object.1))
+        ops::storage_query::handle(self, payload)
     }
 }

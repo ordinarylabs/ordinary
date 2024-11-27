@@ -1,10 +1,12 @@
+use crate::Core;
 use bytes::{BufMut, Bytes, BytesMut};
+use saferlmdb::ReadTransaction;
 
 const MAX_USERNAME_LEN: u8 = 255;
 
 /// username_len.username.client_start
 /// (client_state, payload)
-pub fn new(
+pub fn req(
     username: &[u8],
     password: &[u8],
 ) -> Result<(Vec<u8>, Bytes), Box<dyn std::error::Error>> {
@@ -25,14 +27,33 @@ pub fn new(
 }
 
 /// (username, client_start)
-pub fn process(bytes: Bytes) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-    let username_len = bytes[0];
-    if username_len > bytes.len() as u8 - 2 {
+pub fn handle(core: &Core, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
+    let username_len = payload[0];
+    if username_len > payload.len() as u8 - 2 {
         return Err("invalid format".into());
     }
 
-    let username = bytes[1..(username_len as usize) + 1].to_vec();
-    let client_start = bytes[username_len as usize + 1..].to_vec();
+    let username = payload[1..(username_len as usize) + 1].to_vec();
+    let client_start = payload[username_len as usize + 1..].to_vec();
 
-    Ok((username, client_start))
+    let txn = ReadTransaction::new(core.env.clone())?;
+    let access = txn.access();
+
+    let user_uuid_password_file: &[u8] = access.get(&core.auth_db.clone(), &username)?;
+
+    let (state, message) = cbwaw::login::server_start(
+        &core.opaque,
+        &username,
+        &user_uuid_password_file[16..],
+        &client_start,
+    )?;
+
+    let user_uuid: [u8; 16] = user_uuid_password_file[0..16].try_into()?;
+    drop(access);
+
+    let mut auth_state = core.auth_state.lock();
+    auth_state.insert(user_uuid, state);
+    drop(auth_state);
+
+    Ok(message)
 }
