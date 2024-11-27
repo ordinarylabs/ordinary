@@ -1,0 +1,19 @@
+[package]
+name = "tourist"
+version = "0.0.0"
+edition = "2021"
+authors = ["sean watters <sean@ordinarylabs.io>"]
+
+homepage = "https://github.com/ordinarylabs/ordinary"
+repository = "https://github.com/ordinarylabs/ordinary"
+
+description = "build something ordinary."
+license = "AGPL-3.0-only"
+readme = "README.md"
+categories = []
+
+[dependencies]
+clap = { version = "4.5.18", features = ["derive"] }
+
+log = "0.4.22"
+env_logger = "0.11.5"

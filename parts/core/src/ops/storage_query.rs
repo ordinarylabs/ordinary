@@ -86,14 +86,14 @@ pub fn new(
 /// (id, parent, group, key, content)
 pub fn process(
     bytes: Bytes,
-) -> Result<([u8; 16], Bytes, Bytes, Bytes, Bytes), Box<dyn std::error::Error>> {
+) -> Result<([u8; 16], Bytes, [u8; 16], Bytes, Bytes), Box<dyn std::error::Error>> {
     let len = bytes.len();
 
     if len < 73 {
         return Err("does not include token".into());
     }
 
-    let (user, group) = token::validate_access(&bytes[0..73])?;
+    let (user, group) = token::verify_access(&bytes[0..73])?;
 
     let mut key = BytesMut::with_capacity(255 + 16 + 16);
 

@@ -1,5 +1,5 @@
 mod handlers;
-use handlers::{delete, get, put, stream};
+use handlers::{reqres, stream};
 
 use axum::routing::{any, delete, get, put};
 use axum::Router;
@@ -12,16 +12,17 @@ use std::net::SocketAddr;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use stewball::{self, StorageSystem};
+use stewball::{self, Core};
 
 #[derive(Clone)]
 struct State {
     router: BTreeMap<Vec<u8>, Vec<u8>>,
-    storage: stewball::StorageSystem,
+    core: stewball::Core,
 }
 
 #[derive(Deserialize)]
 struct ReqResPath {
+    parent: Uuid,
     entity: String,
     uuid: Uuid,
 }
@@ -29,9 +30,7 @@ struct ReqResPath {
 fn reqres(state: State, assets_dir: &str) -> Router {
     Router::new()
         .fallback_service(ServeDir::new(assets_dir).append_index_html_on_directories(true))
-        .route("/:entity/:uuid", delete(delete::handler))
-        .route("/:entity/:uuid", get(get::handler))
-        .route("/:entity/:uuid", put(put::handler))
+        .route("/", any(reqres::handler))
         .with_state(state)
 }
 
@@ -46,9 +45,9 @@ pub async fn start(
     stream_listener: TcpListener,
     assets_dir: &str,
     router: BTreeMap<Vec<u8>, Vec<u8>>,
-    storage: StorageSystem,
+    core: Core,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let state = State { router, storage };
+    let state = State { router, core };
 
     let (reqres, stream) = tokio::join!(
         axum::serve(reqres_listener, reqres(state.clone(), assets_dir)),

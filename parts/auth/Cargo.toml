@@ -32,10 +32,14 @@ log = "0.4.22"
 
 ring = "0.17.8"
 
-saferlmdb = "0.0.1"
-
 zstd = "0.13.2"
-blake2 = "0.10.6"
+
+blake2 = { workspace = true }
+opaque-ke = { workspace = true }
+serde = { workspace = true }
+argon2 = { workspace = true }
+chacha20poly1305 = { workspace = true }
+
 
 [lib]
 name = "cbwaw"
