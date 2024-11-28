@@ -1,11 +1,11 @@
 use crate::DefaultCipherSuite;
 
 use bytes::Bytes;
-use opaque_ke::rand::rngs::OsRng;
 use opaque_ke::{
     ClientRegistration, ClientRegistrationFinishParameters, RegistrationRequest,
     RegistrationResponse, RegistrationUpload, ServerRegistration, ServerSetup,
 };
+use rand::rngs::OsRng;
 
 /// message
 pub fn server_start(

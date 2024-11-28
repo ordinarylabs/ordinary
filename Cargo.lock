@@ -514,6 +514,7 @@ dependencies = [
  "mio",
  "oneshot",
  "opaque-ke",
+ "rand 0.8.5",
  "rayon",
  "ring",
  "serde",

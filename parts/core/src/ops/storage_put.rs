@@ -65,12 +65,14 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
         return Err("does not include token".into());
     }
 
-    let (user_id, group_id) = token::verify_access(&bytes[0..73])?;
+    let (user_uuid, group_uuid) = token::verify_with_group(12, &bytes[0..73])?;
 
-    let parent_id: [u8; 16] = bytes[73..89].try_into()?;
+    // todo: check that the group is associated to the parent
+
+    let parent_uuid: [u8; 16] = bytes[73..89].try_into()?;
     let kind = bytes[89];
 
-    let grandparent_id: [u8; 16] = bytes[90..106].try_into()?;
+    let grandparent_uuid: [u8; 16] = bytes[90..106].try_into()?;
     let parent_kind = bytes[106];
 
     let uuid = Uuid::now_v7();
@@ -78,7 +80,7 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
 
     let mut key = [0u8; 33];
 
-    key[0..16].copy_from_slice(&parent_id[..]);
+    key[0..16].copy_from_slice(&parent_uuid[..]);
     key[16] = kind;
     key[17..33].copy_from_slice(&id[..]);
 
@@ -86,60 +88,59 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
 
     let mut entity = BytesMut::with_capacity(16 + 16 + 1 + entity_len);
 
-    entity.put(&grandparent_id[..]);
+    entity.put(&grandparent_uuid[..]);
     entity.put_u8(parent_kind);
-    entity.put(&user_id[..]);
+    entity.put(&user_uuid[..]);
 
     entity.put(&bytes[107..]);
 
     let mut parent_key = [0u8; 33];
 
-    parent_key[0..16].copy_from_slice(&grandparent_id[..]);
+    parent_key[0..16].copy_from_slice(&grandparent_uuid[..]);
     parent_key[16] = parent_kind;
-    parent_key[17..33].copy_from_slice(&parent_id[..]);
+    parent_key[17..33].copy_from_slice(&parent_uuid[..]);
 
     let txn = WriteTransaction::new(core.env.clone())?;
 
     {
         let mut access = txn.access();
 
-        let mut valid_group = false;
-        let parent_group: &[u8; 16] = access.get(&core.group_db, &parent_id[..])?;
+        // let mut valid_group = false;
+        // let parent_group: &[u8; 16] = access.get(&core.group_db, &parent_uuid[..])?;
 
-        if parent_group != &group_id {
-            let mut cursor = txn.cursor(core.group_db.clone())?;
+        // if parent_group != &group_uuid {
+        //     let mut cursor = txn.cursor(core.group_db.clone())?;
 
-            cursor.seek_k::<[u8; 16], [u8; 16]>(&access, parent_group)?;
+        //     cursor.seek_k::<[u8; 16], [u8; 16]>(&access, parent_group)?;
 
-            let sub_groups: &[[u8; 16]] = cursor.get_multiple(&access)?;
+        //     let sub_groups: &[[u8; 16]] = cursor.get_multiple(&access)?;
 
-            for sub_group in sub_groups {
-                if sub_group == &group_id[..] {
-                    valid_group = true;
-                    break;
-                }
-            }
+        //     for sub_group in sub_groups {
+        //         if sub_group == &group_uuid[..] {
+        //             valid_group = true;
+        //             break;
+        //         }
+        //     }
 
-            if !valid_group {
-                'outer: loop {
-                    let sub_groups: &[[u8; 16]] = cursor.next_multiple(&access)?;
+        //     if !valid_group {
+        //         'outer: loop {
+        //             let sub_groups: &[[u8; 16]] = cursor.next_multiple(&access)?;
 
-                    for sub_group in sub_groups {
-                        if sub_group == &group_id[..] {
-                            valid_group = true;
-                            break 'outer;
-                        }
-                    }
-                }
-            }
-        }
+        //             for sub_group in sub_groups {
+        //                 if sub_group == &group_uuid[..] {
+        //                     valid_group = true;
+        //                     break 'outer;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        if valid_group {
-            access.put(&core.group_db, &id, &group_id, put::Flags::empty())?;
-            access.put(&core.entity_db, &key, &*entity, put::Flags::empty())?;
-        } else {
-            return Err("invalid group".into());
-        }
+        // if valid_group {
+        access.put(&core.entity_db, &key, &*entity, put::Flags::empty())?;
+        // } else {
+        //     return Err("invalid group".into());
+        // }
     }
 
     txn.commit()?;

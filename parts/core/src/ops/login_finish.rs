@@ -1,8 +1,6 @@
-use crate::Core;
+use crate::{Core, MAX_USERNAME_LEN};
 use bytes::{BufMut, Bytes, BytesMut};
 use saferlmdb::ReadTransaction;
-
-const MAX_USERNAME_LEN: u8 = 255;
 
 /// username_len.username.client_finish
 /// payload
@@ -23,7 +21,7 @@ pub fn req(
     let mut buf = BytesMut::with_capacity(1 + username_len + client_finish.len());
 
     buf.put_u8(username_len as u8);
-    buf.put(&username[..]);
+    buf.put(username);
     buf.put(&client_finish[..]);
 
     Ok((buf.into(), session_key))
@@ -58,4 +56,8 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
     }
 
     Ok(Bytes::new())
+}
+
+pub fn res(payload: Bytes, session_key: &[u8]) -> Result<Bytes, Box<dyn std::error::Error>> {
+    cbwaw::login::decrypt_token(&payload, session_key)
 }

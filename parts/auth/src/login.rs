@@ -7,11 +7,11 @@ use chacha20poly1305::{
     aead::{Aead, AeadCore, KeyInit},
     XChaCha20Poly1305, XNonce,
 };
-use opaque_ke::rand::rngs::OsRng;
 use opaque_ke::{
     ClientLogin, ClientLoginFinishParameters, CredentialFinalization, CredentialRequest,
     CredentialResponse, ServerLogin, ServerLoginStartParameters, ServerRegistration, ServerSetup,
 };
+use rand::rngs::OsRng;
 
 use crate::{token, DefaultCipherSuite};
 
@@ -53,7 +53,7 @@ pub fn server_finish(
         .finish(CredentialFinalization::deserialize(client_finish).unwrap())
         .unwrap();
 
-    let token = token::generate_refresh(user_id).unwrap();
+    let token = token::gen_without_group(0, user_id).unwrap();
 
     let mut key = [0u8; 32];
 
@@ -116,7 +116,6 @@ pub fn client_finish(
 pub fn decrypt_token(
     encrypted_token: &[u8],
     session_key: &[u8],
-    nonce: &[u8],
 ) -> Result<Bytes, Box<dyn std::error::Error>> {
     let mut key = [0u8; 32];
 
@@ -124,10 +123,14 @@ pub fn decrypt_token(
     hasher.update(session_key);
     hasher.finalize_variable(&mut key).unwrap();
 
-    let cipher = XChaCha20Poly1305::new(&key.into());
-    let nonce = XNonce::from_slice(nonce);
+    let nonce_start = encrypted_token.len() - 25;
 
-    let plaintext = cipher.decrypt(nonce, encrypted_token.as_ref()).unwrap();
+    let cipher = XChaCha20Poly1305::new(&key.into());
+    let nonce = XNonce::from_slice(&encrypted_token[nonce_start..]);
+
+    let plaintext = cipher
+        .decrypt(nonce, encrypted_token[..nonce_start].as_ref())
+        .unwrap();
 
     Ok(Bytes::copy_from_slice(&plaintext))
 }

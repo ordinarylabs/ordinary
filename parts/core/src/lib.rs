@@ -20,6 +20,8 @@ use saferlmdb::{self as lmdb, Database, DatabaseOptions, EnvBuilder, Environment
 
 pub mod ops;
 
+const MAX_USERNAME_LEN: u8 = 255;
+
 /// On-disk/transport format
 ///
 /// key([  grandparent  ],[ kind ]|[  parent  ])-value(properties)-backLink([ kind ]|[  great grandparent  ], [ grandparent_kind ])
@@ -59,7 +61,7 @@ pub struct Core {
     /// user_uuid -> user()
     user_db: Arc<Database<'static>>,
 
-    /// (entity_id | user_uuid) -> group_id
+    /// (entity_uuid | user_uuid).group_id.action -> []
     /// is DUPSORT, and DUPFIXED
     group_db: Arc<Database<'static>>,
 
@@ -71,7 +73,7 @@ pub struct Core {
     ///                            key([  parent  ],[ kind ]|[  child  ]) -> backLink(grandparent.parent_kind), value(properties)
     entity_db: Arc<Database<'static>>,
 
-    /// (entity_id | user_uuid) -> ref_type.(entity_id | user_uuid)
+    /// (entity_uuid | user_uuid).ref_type -> (entity_uuid | user_uuid)
     /// is DUPSORT, and DUPFIXED
     reference_db: Arc<Database<'static>>,
 

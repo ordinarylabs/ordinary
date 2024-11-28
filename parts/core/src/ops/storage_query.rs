@@ -91,7 +91,7 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
         return Err("does not include token".into());
     }
 
-    let (user, group) = token::verify_access(&bytes[0..73])?;
+    let user = token::verify_without_group(13, &bytes[0..57])?;
 
     let mut key = BytesMut::with_capacity(255 + 16 + 16);
 

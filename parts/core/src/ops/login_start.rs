@@ -1,8 +1,6 @@
-use crate::Core;
+use crate::{Core, MAX_USERNAME_LEN};
 use bytes::{BufMut, Bytes, BytesMut};
 use saferlmdb::ReadTransaction;
-
-const MAX_USERNAME_LEN: u8 = 255;
 
 /// username_len.username.client_start
 /// (client_state, payload)
