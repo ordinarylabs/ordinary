@@ -56,12 +56,7 @@ use uuid::Uuid;
 /// </div>
 ///
 /// product.1234.comments[0..10].replies
-pub fn req(
-    token: &[u8; 73],
-    parent: &[u8; 16],
-    id: &[u8; 16],
-    query: &str,
-) -> Result<Bytes, Box<dyn std::error::Error>> {
+pub fn req(token: &[u8], query: &[u8]) -> Result<Bytes, Box<dyn std::error::Error>> {
     // let kind_len = kind.len();
 
     // if kind_len > 255 {
@@ -116,6 +111,19 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
     content.put(&bytes[90 + kind_len..]);
 
     // ?? id, parent, group, key, content
+
+    //     let mut cursor = txn.cursor(core.group_db.clone())?;
+
+    //     cursor.seek_k::<[u8; 16], [u8; 16]>(&access, parent_group)?;
+
+    //     let sub_groups: &[[u8; 16]] = cursor.get_multiple(&access)?;
+
+    //     for sub_group in sub_groups {
+    //         if sub_group == &group_uuid[..] {
+    //             valid_group = true;
+    //             break;
+    //         }
+    //     }
 
     let txn = ReadTransaction::new(core.env.clone())?;
     let access = txn.access();

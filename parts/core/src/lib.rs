@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use bytes::Bytes;
 use opaque_ke::{Ristretto255, ServerSetup};
+use ops::access_get;
 use parking_lot::Mutex;
 use rand::rngs::OsRng;
 
@@ -164,14 +165,14 @@ impl Core {
     }
 
     pub fn access_get(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
-        Ok(Bytes::new())
+        ops::access_get::handle(self, payload)
     }
 
     pub fn group_assign(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
         Ok(Bytes::new())
     }
     pub fn group_create(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
-        Ok(Bytes::new())
+        ops::group_create::handle(self, payload)
     }
     pub fn group_drop(&self, payload: Bytes) -> Result<Bytes, Box<dyn std::error::Error>> {
         Ok(Bytes::new())

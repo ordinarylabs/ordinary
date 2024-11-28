@@ -5,39 +5,53 @@ use stewball::Core;
 fn all() -> Result<(), Box<dyn std::error::Error>> {
     let core = Core::new()?;
 
-    // AUTH: registration start
+    // registration start
     let (state, req) = ops::registration_start::req(b"username", b"password")?;
     let res = core.registration_start(req)?;
 
-    // AUTH: registration finish
+    // registration finish
     let req = ops::registration_finish::req(b"username", b"password", &state, &res)?;
     core.registration_finish(req)?;
 
-    // AUTH: login start
+    // login start
     let (state, req) = ops::login_start::req(b"username", b"password")?;
     let res = core.login_start(req)?;
 
-    // AUTH: login finish
+    // login finish
     let (req, session_key) = ops::login_finish::req(b"username", b"password", &state, &res)?;
     let res = core.login_finish(req)?;
 
-    let refresh_token = ops::login_finish::res(res, &session_key);
+    let refresh_token = ops::login_finish::res(res, &session_key)?;
 
-    // AUTH: get group_create access token for 0000000000000000
+    // get GROUP_CREATE access token
+    let req = ops::access_get::req(&refresh_token, 3, None)?;
+    let access_token = core.access_get(req)?;
 
     // create a group
+    let req = ops::group_create::req(&access_token)?;
+    let res = core.group_create(req)?;
+    let group_uuid = ops::group_create::res(res)?;
 
-    // AUTH: get group_assign access token for 0000000000000000
-
-    // add group to your user
-
-    // AUTH: get put access token for new group
+    // get STORAGE_PUT access token for new group
+    let req = ops::access_get::req(&refresh_token, 12, Some(&group_uuid))?;
+    let access_token = core.access_get(req)?;
 
     // create a property on your user with new group
+    // let req = ops::storage_put::req(
+    //     &access_token,
+    //     parent_uuid, // user uuid
+    //     9,
+    //     grandparent_uuid, // user uuid
+    //     parent_kind,      // 0
+    //     entity,
+    // )?;
 
-    // AUTH: get read access token for 0000000000000000 ?? see how many of these show up so that we can make group optional
+    // get STORAGE_QUERY access token
+    let req = ops::access_get::req(&refresh_token, 13, None)?;
+    let access_token = core.access_get(req)?;
 
     // query your user
+    // let req = ops::storage_query::req(&access_token, query)?;
 
     Ok(())
 }

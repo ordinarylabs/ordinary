@@ -20,24 +20,24 @@ use uuid::Uuid;
 /// - entity:
 ///     - entity: ..
 pub fn req(
-    token: &[u8; 73],
+    access_token: &[u8],
 
-    parent: &[u8; 16],
+    parent_uuid: &[u8; 16],
     kind: u8,
 
-    grandparent: &[u8; 16],
+    grandparent_uuid: &[u8; 16],
     parent_kind: u8,
 
     entity: &[u8],
 ) -> Result<Bytes, Box<dyn std::error::Error>> {
     let mut buf = BytesMut::with_capacity(73 + 1 + 16 + entity.len());
 
-    buf.put(&token[..]);
+    buf.put(&access_token[..]);
 
-    buf.put(&parent[..]);
+    buf.put(&parent_uuid[..]);
     buf.put_u8(kind);
 
-    buf.put(&grandparent[..]);
+    buf.put(&grandparent_uuid[..]);
     buf.put_u8(parent_kind);
 
     buf.put(entity);
@@ -62,14 +62,13 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
     let len = bytes.len();
 
     if len < 73 {
-        return Err("does not include token".into());
+        return Err("req does not include access token".into());
     }
 
     let (user_uuid, group_uuid) = token::verify_with_group(12, &bytes[0..73])?;
 
-    // todo: check that the group is associated to the parent
-
     let parent_uuid: [u8; 16] = bytes[73..89].try_into()?;
+
     let kind = bytes[89];
 
     let grandparent_uuid: [u8; 16] = bytes[90..106].try_into()?;
@@ -105,42 +104,15 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
     {
         let mut access = txn.access();
 
-        // let mut valid_group = false;
-        // let parent_group: &[u8; 16] = access.get(&core.group_db, &parent_uuid[..])?;
+        // check the parent for this group association
+        let mut check = Vec::with_capacity(32);
 
-        // if parent_group != &group_uuid {
-        //     let mut cursor = txn.cursor(core.group_db.clone())?;
+        check.extend_from_slice(&parent_uuid[..]);
+        check.extend_from_slice(&group_uuid[..]);
+        check.push(0);
 
-        //     cursor.seek_k::<[u8; 16], [u8; 16]>(&access, parent_group)?;
-
-        //     let sub_groups: &[[u8; 16]] = cursor.get_multiple(&access)?;
-
-        //     for sub_group in sub_groups {
-        //         if sub_group == &group_uuid[..] {
-        //             valid_group = true;
-        //             break;
-        //         }
-        //     }
-
-        //     if !valid_group {
-        //         'outer: loop {
-        //             let sub_groups: &[[u8; 16]] = cursor.next_multiple(&access)?;
-
-        //             for sub_group in sub_groups {
-        //                 if sub_group == &group_uuid[..] {
-        //                     valid_group = true;
-        //                     break 'outer;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-        // if valid_group {
+        access.get::<[u8], [u8]>(&core.group_db.clone(), &check)?;
         access.put(&core.entity_db, &key, &*entity, put::Flags::empty())?;
-        // } else {
-        //     return Err("invalid group".into());
-        // }
     }
 
     txn.commit()?;
