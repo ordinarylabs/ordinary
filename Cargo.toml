@@ -19,7 +19,7 @@ members = [
     ".structure/*",
 
     ## only for this project
-    "parts/*",
+    "system/*",
     "tools/browser",
     "tools/cli",
     "tools/ide/src-tauri",
@@ -27,8 +27,8 @@ members = [
 
 ## only for this project
 [workspace.dependencies]
-cbwaw = { path = "./parts/auth", version = "*" }
-stewball = { path = "./parts/core", version = "*" }
+cbwaw = { path = "./system/auth", version = "*" }
+stewball = { path = "./system/core", version = "*" }
 saferlmdb = "0.1.0"
 blake2 = "0.10.6"
 opaque-ke = { version = "3.0.0", features = ["argon2"] }
