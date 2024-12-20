@@ -22,6 +22,7 @@ fn all() -> Result<(), Box<dyn std::error::Error>> {
     let res = core.login_finish(req)?;
 
     let refresh_token = ops::login_finish::res(res, &session_key)?;
+    let user_uuid: [u8; 16] = refresh_token[41..57].try_into()?;
 
     // get GROUP_CREATE access token
     let req = ops::access_get::req(&refresh_token, 3, None)?;
@@ -36,22 +37,22 @@ fn all() -> Result<(), Box<dyn std::error::Error>> {
     let req = ops::access_get::req(&refresh_token, 12, Some(&group_uuid))?;
     let access_token = core.access_get(req)?;
 
-    // create a property on your user with new group
-    // let req = ops::storage_put::req(
-    //     &access_token,
-    //     parent_uuid, // user uuid
-    //     9,
-    //     grandparent_uuid, // user uuid
-    //     parent_kind,      // 0
-    //     entity,
-    // )?;
+    // create an entity relationship with your user
+    let req = ops::storage_put::req(
+        &access_token,
+        &user_uuid, // user uuid
+        1,
+        &user_uuid, // user uuid
+        0,          // 0
+        &[0],
+    )?;
 
     // get STORAGE_QUERY access token
     let req = ops::access_get::req(&refresh_token, 13, None)?;
     let access_token = core.access_get(req)?;
 
     // query your user
-    // let req = ops::storage_query::req(&access_token, query)?;
+    let req = ops::storage_query::req(&access_token, vec![])?;
 
     Ok(())
 }

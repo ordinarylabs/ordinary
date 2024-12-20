@@ -1,11 +1,3 @@
-mod io;
-use io::{Input0, Output0};
-
-pub fn handler0(input: Input0) -> Output0 {
-    Output0 {}
-}
-
-use sailfish::runtime::Buffer;
 use sailfish::TemplateSimple;
 use serde::Serialize;
 

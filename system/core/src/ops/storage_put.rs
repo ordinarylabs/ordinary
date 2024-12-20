@@ -105,7 +105,7 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
         let mut access = txn.access();
 
         // check the parent for this group association
-        let mut check = Vec::with_capacity(32);
+        let mut check = Vec::with_capacity(33);
 
         check.extend_from_slice(&parent_uuid[..]);
         check.extend_from_slice(&group_uuid[..]);
