@@ -3,10 +3,10 @@ use bytes::{BufMut, Bytes, BytesMut};
 use cbwaw::token;
 use saferlmdb::ReadTransaction;
 
-/// [uuid][kind count][kinds][uuid][kind count][kinds]
+/// [parent][uuid][kind count][kinds][parent][uuid][kind count][kinds]
 pub fn req(
     token: &[u8],
-    query: Vec<(&[u8; 16], Vec<u8>)>,
+    query: Vec<(&[u8; 16], &[u8; 16], Vec<u8>)>,
 ) -> Result<Bytes, Box<dyn std::error::Error>> {
     if query.len() > 255 {
         return Err("query cannot contain more than 255 entities".into());
@@ -16,7 +16,8 @@ pub fn req(
 
     buf.put(&token[..]);
 
-    for (entity_uuid, kinds) in query {
+    for (parent_uuid, entity_uuid, kinds) in query {
+        buf.put(&parent_uuid[..]);
         buf.put(&entity_uuid[..]);
 
         if kinds.len() > 255 {
@@ -43,7 +44,49 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
 
     let (user_uuid, group_uuid) = token::verify_with_group(12, &bytes[0..73])?;
 
-    // todo: 1 construct the set of keys you'll need to cursor over
+    let mut query_cursor = 73;
+    let mut keys = vec![];
+
+    'outer: loop {
+        if len == query_cursor {
+            break 'outer;
+        } else if len > query_cursor + 34 {
+            return Err("invalid query".into());
+        }
+
+        let parent_uuid = [];
+        query_cursor += 16;
+
+        let entity_uuid = [];
+        query_cursor += 16;
+
+        let kind_count = bytes[query_cursor] as usize;
+        query_cursor += 1;
+
+        let end = query_cursor + kind_count;
+
+        if len > end {
+            return Err("invalid query".into());
+        }
+
+        'inner: loop {
+            if query_cursor > end {
+                break 'inner;
+            }
+
+            let mut buf = BytesMut::with_capacity(33);
+
+            buf.put(&parent_uuid[..]);
+
+            buf.put_u8(bytes[query_cursor]);
+            query_cursor += 1;
+
+            buf.put(&entity_uuid[..]);
+
+            keys.push(buf);
+        }
+    }
+
     // todo: 2 verify that the group_uuid is valid for returned entities
 
     //     let mut cursor = txn.cursor(core.group_db.clone())?;
@@ -66,12 +109,19 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
         .cursor(core.entity_db.clone())
         .expect("failed to create cursor");
 
-    // todo: 3 build the output
-    // for entity_uuid in entity_uuids {
-    //     for kind in kinds {
-    //         cursor.seek_k::<[u8], [u8]>(&access, uuid_and_kind)
-    //     }
-    // }
+    for key in keys {
+        let v = cursor.seek_k::<[u8], [u8]>(&access, &key);
+
+        loop {
+            let (k, v) = cursor.next::<[u8], [u8]>(&access)?;
+
+            if k[17] != key[17] {
+                break;
+            } else {
+                // todo: cram into output
+            }
+        }
+    }
 
     Ok(Bytes::copy_from_slice(&[0]))
 }

@@ -83,7 +83,7 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
     key[16] = kind;
     key[17..33].copy_from_slice(&id[..]);
 
-    let entity_len = len - (107);
+    let entity_len = len - 107;
 
     let mut entity = BytesMut::with_capacity(16 + 16 + 1 + entity_len);
 
