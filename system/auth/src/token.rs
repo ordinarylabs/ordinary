@@ -126,7 +126,7 @@ pub fn gen_without_group(
     }
 }
 
-/// (user, group)
+/// (user)
 #[inline(always)]
 pub fn verify_without_group(
     action: u8,

@@ -75,13 +75,13 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
     let parent_kind = bytes[106];
 
     let uuid = Uuid::now_v7();
-    let id = *uuid.as_bytes();
+    let entity_uuid = *uuid.as_bytes();
 
     let mut key = [0u8; 33];
 
     key[0..16].copy_from_slice(&parent_uuid[..]);
     key[16] = kind;
-    key[17..33].copy_from_slice(&id[..]);
+    key[17..33].copy_from_slice(&entity_uuid[..]);
 
     let entity_len = len - 107;
 
@@ -93,29 +93,36 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
 
     entity.put(&bytes[107..]);
 
-    let mut parent_key = [0u8; 33];
-
-    parent_key[0..16].copy_from_slice(&grandparent_uuid[..]);
-    parent_key[16] = parent_kind;
-    parent_key[17..33].copy_from_slice(&parent_uuid[..]);
-
     let txn = WriteTransaction::new(core.env.clone())?;
 
     {
         let mut access = txn.access();
 
         // check the parent for this group association
-        let mut check = Vec::with_capacity(33);
+        let mut rule = [0u8; 33];
 
-        check.extend_from_slice(&parent_uuid[..]);
-        check.extend_from_slice(&group_uuid[..]);
-        check.push(0);
+        rule[0..16].copy_from_slice(&parent_uuid[..]);
+        rule[16..32].copy_from_slice(&group_uuid[..]);
+        // read/write
+        rule[32] = 0;
 
-        access.get::<[u8], [u8]>(&core.group_db.clone(), &check)?;
+        // check the parent group
+        access.get::<[u8; 33], [u8]>(&core.group_db.clone(), &rule)?;
+
+        // define read only rule
+        rule[0..16].copy_from_slice(&entity_uuid[..]);
+        rule[16..32].copy_from_slice(&group_uuid[..]);
+        // read
+        rule[32] = 1;
+
+        // make available to read for anyone in this group
+        access.put::<[u8; 33], [u8]>(&core.group_db, &rule, &[], put::Flags::empty())?;
+
+        // insert
         access.put(&core.entity_db, &key, &*entity, put::Flags::empty())?;
     }
 
     txn.commit()?;
 
-    Ok(Bytes::copy_from_slice(&id[..]))
+    Ok(Bytes::copy_from_slice(&entity_uuid[..]))
 }

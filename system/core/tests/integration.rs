@@ -1,4 +1,7 @@
+use std::collections::BTreeMap;
+
 use stewball::ops;
+use stewball::ops::storage_query::QueryResult;
 use stewball::Core;
 
 #[test]
@@ -41,18 +44,31 @@ fn all() -> Result<(), Box<dyn std::error::Error>> {
     let req = ops::storage_put::req(
         &access_token,
         &user_uuid, // user uuid
-        1,
+        1,          // kind
         &user_uuid, // user uuid
         0,          // 0
         &[0],
     )?;
+    let entity_uuid: [u8; 16] = core.storage_put(req)?[..]
+        .try_into()
+        .expect("failed to convert");
 
     // get STORAGE_QUERY access token
-    let req = ops::access_get::req(&refresh_token, 13, None)?;
+    let req = ops::access_get::req(&refresh_token, 13, Some(&group_uuid))?;
     let access_token = core.access_get(req)?;
 
     // query your user
-    let req = ops::storage_query::req(&access_token, vec![])?;
+    let req = ops::storage_query::req(&access_token, vec![(&user_uuid, &entity_uuid, vec![1])])?;
+    let query_result = core.storage_query(req)?;
+
+    let decoded: QueryResult = bitcode::decode(&query_result).unwrap();
+
+    assert_eq!(
+        decoded,
+        QueryResult {
+            entities: BTreeMap::new()
+        }
+    );
 
     Ok(())
 }

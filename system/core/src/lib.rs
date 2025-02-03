@@ -2,8 +2,10 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use bytes::Bytes;
-use opaque_ke::{Ristretto255, ServerSetup};
-use ops::access_get;
+use opaque_ke::{
+    errors::{InternalError, ProtocolError},
+    Ristretto255, ServerSetup,
+};
 use parking_lot::Mutex;
 use rand::rngs::OsRng;
 
@@ -86,11 +88,17 @@ impl Core {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let mut rng = OsRng;
 
-        let opaque = ServerSetup::<DefaultCipherSuite>::new_with_key(
-            &mut rng,
-            opaque_ke::keypair::KeyPair::<Ristretto255>::from_private_key_slice(&[0u8; 32])
-                .unwrap(),
-        );
+        let keypair = match opaque_ke::keypair::KeyPair::<Ristretto255>::from_private_key_slice(
+            &[0u8; 32][..],
+        ) {
+            Ok(kp) => kp,
+            Err(err) => {
+                println!("error: {:?}", err);
+                return Err(err.to_string().into());
+            }
+        };
+
+        let opaque = ServerSetup::<DefaultCipherSuite>::new(&mut rng);
 
         let auth_state = Arc::new(Mutex::new(BTreeMap::new()));
 

@@ -20,17 +20,18 @@ pub fn handle(core: &Core, bytes: Bytes) -> Result<Bytes, Box<dyn std::error::Er
     let uuid = Uuid::new_v4();
     let group_uuid = uuid.as_bytes();
 
-    let mut check = Vec::with_capacity(32);
+    let mut rule = Vec::with_capacity(33);
 
-    check.extend_from_slice(&user_uuid[..]);
-    check.extend_from_slice(&group_uuid[..]);
-    check.push(0);
+    rule.extend_from_slice(&user_uuid[..]);
+    rule.extend_from_slice(&group_uuid[..]);
+    // read/write
+    rule.push(0);
 
     let txn = WriteTransaction::new(core.env.clone())?;
 
     {
         let mut access = txn.access();
-        access.put::<[u8], [u8]>(&core.group_db, &check, &[], put::Flags::empty())?;
+        access.put::<[u8], [u8]>(&core.group_db, &rule, &[], put::Flags::empty())?;
     }
 
     Ok(Bytes::copy_from_slice(group_uuid))

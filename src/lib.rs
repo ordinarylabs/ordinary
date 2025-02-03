@@ -1,4 +1,4 @@
-use sailfish::TemplateSimple;
+use sailfish::{runtime::Buffer, TemplateSimple};
 use serde::Serialize;
 
 #[derive(TemplateSimple)]
